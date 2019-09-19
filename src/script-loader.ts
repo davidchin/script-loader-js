@@ -27,7 +27,7 @@ export default class ScriptLoader {
         const events: Event[] = [];
         let promise: Promise<Event> | undefined;
 
-        return Promise.all(urls.map(url => this._preloadScript(url)))
+        return this.preloadScripts(urls)
             .then(() => {
                 urls.forEach(url => {
                     if (promise) {
@@ -36,7 +36,11 @@ export default class ScriptLoader {
                         promise = this.loadScript(url);
                     }
 
-                    promise.then(event => events.push(event));
+                    promise = promise.then(event => {
+                        events.push(event);
+
+                        return event;
+                    });
                 });
 
                 return promise;
@@ -44,7 +48,7 @@ export default class ScriptLoader {
             .then(() => events);
     }
 
-    private _preloadScript(url: string): Promise<Event> {
+    preloadScript(url: string): Promise<Event> {
         if (!this._preloadedScripts[url]) {
             this._preloadedScripts[url] = new Promise((resolve, reject) => {
                 const preloadedScript = document.createElement('link') as HTMLLinkElement;
@@ -67,6 +71,10 @@ export default class ScriptLoader {
         }
 
         return this._preloadedScripts[url];
+    }
+
+    preloadScripts(urls: string[]): Promise<Event[]> {
+        return Promise.all(urls.map(url => this.preloadScript(url)));
     }
 }
 
